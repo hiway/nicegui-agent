@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from socketio import AsyncClient, AsyncServer
-from socketio.exceptions import BadNamespaceError
+from socketio.exceptions import BadNamespaceError, ConnectionError
 
 
 
@@ -100,17 +100,24 @@ class Agent:
 
     async def connect(self, url: str):
         if isinstance(self.sio, AsyncClient):
-            await self.sio.connect(
-                url, namespaces=[self.namespace], socketio_path=self._ng_socket_path
-            )
+            while not self.sio.connected:
+                try:
+                    await self.sio.connect(
+                        url, namespaces=[self.namespace], socketio_path=self._ng_socket_path
+                    )
+                    print("Agent is connected.")
+                    break
+                except ConnectionError as error:
+                    print("Agent is not connected. Retrying...")
+                    await asyncio.sleep(3)
         else:
-            raise RuntimeError("Server Agent cannot connect.")
+            raise RuntimeError("ServerAgent cannot connect.")
 
     async def disconnect(self):
         if isinstance(self.sio, AsyncClient):
             await self.sio.disconnect()
         else:
-            raise RuntimeError("Server Agent cannot disconnect.")
+            raise RuntimeError("ServerAgent cannot disconnect.")
 
     async def run(self, url: str):
         try:
