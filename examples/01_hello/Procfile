@@ -1,0 +1,2 @@
+main: python3 main.py
+agent: python3 agent.py
